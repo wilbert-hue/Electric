@@ -80,14 +80,14 @@ export function FilterPresets() {
     // Presets use the segments array, not advancedSegments
     ;(newFilters as any).advancedSegments = []
 
-    // If preset doesn't specify certain filters, keep current ones
-    if (!newFilters.geographies && filters.geographies.length > 0) {
+    // If preset omits a field, keep current — use explicit undefined checks so [] from preset is respected
+    if (newFilters.geographies === undefined && filters.geographies.length > 0) {
       newFilters.geographies = filters.geographies
     }
-    if (!newFilters.segments && filters.segments.length > 0) {
+    if (newFilters.segments === undefined && filters.segments.length > 0) {
       newFilters.segments = filters.segments
     }
-    if (!newFilters.segmentType && filters.segmentType) {
+    if (newFilters.segmentType === undefined && filters.segmentType) {
       newFilters.segmentType = filters.segmentType
     }
 

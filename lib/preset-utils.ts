@@ -5,6 +5,120 @@
 
 import type { ComparisonData, DataRecord, FilterState } from './types'
 
+/** Segment types that mirror geography breakdowns, not product taxonomy. */
+const GEO_DIMENSION_SEGMENT_TYPES = new Set(['By Region', 'By State', 'By Country'])
+
+/** Prefer this order so presets rank markets on product value, not application slices. */
+const MARKET_SEGMENT_TYPE_PRIORITY = [
+  'By Product Type',
+  'By Type',
+  'By Technology',
+  'By Project Type',
+  'By Application',
+  'Application / Use Case',
+  'By End-Use Sector',
+  'By End User',
+]
+
+export function getAllCountryGeographies(data: ComparisonData | null): string[] {
+  if (!data?.dimensions?.geographies?.countries) return []
+  return Object.values(data.dimensions.geographies.countries).flat()
+}
+
+function getRegionGeographiesSet(data: ComparisonData | null): Set<string> {
+  if (!data) return new Set()
+  const regions = data.dimensions.geographies.regions
+  if (regions?.length) return new Set(regions)
+  const all = data.dimensions.geographies.all_geographies || []
+  const countrySet = new Set(getAllCountryGeographies(data))
+  return new Set(all.filter((g) => g !== 'Global' && !countrySet.has(g)))
+}
+
+/**
+ * First segment type used for preset math: excludes By Country / By Region, prefers By Product Type.
+ */
+export function getFirstMarketSegmentType(data: ComparisonData | null): string | null {
+  if (!data?.dimensions?.segments) return null
+  const keys = new Set(Object.keys(data.dimensions.segments))
+  for (const preferred of MARKET_SEGMENT_TYPE_PRIORITY) {
+    if (keys.has(preferred) && !GEO_DIMENSION_SEGMENT_TYPES.has(preferred)) {
+      return preferred
+    }
+  }
+  const fallback = Object.keys(data.dimensions.segments).find(
+    (k) => !GEO_DIMENSION_SEGMENT_TYPES.has(k)
+  )
+  return fallback ?? null
+}
+
+function sumLeafMarketByGeography(
+  records: DataRecord[],
+  opts: {
+    year: number
+    segmentType: string
+    geographySet: Set<string>
+  }
+): Map<string, number> {
+  const geographyTotals = new Map<string, number>()
+  const { year, segmentType, geographySet } = opts
+
+  const accumulate = (useAggregatedToo: boolean) => {
+    geographyTotals.clear()
+    records.forEach((record: DataRecord) => {
+      const geography = record.geography
+      if (geography === 'Global' || !geographySet.has(geography)) return
+      if (record.segment_type !== segmentType) return
+      if (!useAggregatedToo && record.is_aggregated === true) return
+
+      const value = record.time_series[year] || 0
+      geographyTotals.set(geography, (geographyTotals.get(geography) || 0) + value)
+    })
+  }
+
+  accumulate(false)
+  if (geographyTotals.size === 0 || [...geographyTotals.values()].every((v) => v === 0)) {
+    accumulate(true)
+  }
+
+  return geographyTotals
+}
+
+function collectCagrSamplesByGeography(
+  records: DataRecord[],
+  opts: {
+    segmentType: string
+    geographySet: Set<string>
+    leavesOnly: boolean
+  }
+): Map<string, number[]> {
+  const geographyCAGRs = new Map<string, number[]>()
+  records.forEach((record: DataRecord) => {
+    const geography = record.geography
+    if (geography === 'Global' || !opts.geographySet.has(geography)) return
+    if (record.segment_type !== opts.segmentType) return
+    if (opts.leavesOnly && record.is_aggregated === true) return
+    if (record.cagr === undefined || record.cagr === null) return
+    const cagrs = geographyCAGRs.get(geography) || []
+    cagrs.push(record.cagr)
+    geographyCAGRs.set(geography, cagrs)
+  })
+  return geographyCAGRs
+}
+
+function rankGeographiesByAvgCagr(
+  geographyCAGRs: Map<string, number[]>,
+  topN: number
+): string[] {
+  const avgCAGRs = Array.from(geographyCAGRs.entries()).map(([geography, cagrs]) => ({
+    geography,
+    avgCAGR: cagrs.reduce((a, b) => a + b, 0) / cagrs.length
+  }))
+  return avgCAGRs
+    .sort((a, b) => b.avgCAGR - a.avgCAGR)
+    .slice(0, topN)
+    .map((item) => item.geography)
+}
+
 /**
  * Calculate top regions based on market value for a specific year
  * @param data - The comparison data
@@ -19,28 +133,21 @@ export function getTopRegionsByMarketValue(
 ): string[] {
   if (!data) return []
 
-  // Get all value data records
+  const segmentType = getFirstMarketSegmentType(data)
+  if (!segmentType) return []
+
   const records = data.data.value.geography_segment_matrix
+  const regionSet = getRegionGeographiesSet(data)
+  if (regionSet.size === 0) return []
 
-  // Calculate total market value by geography for the specified year
-  // Treat all geographies as single entities - aggregate by name
-  const geographyTotals = new Map<string, number>()
-
-  records.forEach((record: DataRecord) => {
-    const geography = record.geography
-    const value = record.time_series[year] || 0
-
-    // Skip global level
-    if (geography === 'Global') return
-
-    // Treat all geographies as single entities - aggregate by name
-    const currentTotal = geographyTotals.get(geography) || 0
-    geographyTotals.set(geography, currentTotal + value)
+  const geographyTotals = sumLeafMarketByGeography(records, {
+    year,
+    segmentType,
+    geographySet: regionSet,
   })
 
-  // Sort geographies by total value and get top N
   const sortedGeographies = Array.from(geographyTotals.entries())
-    .sort((a, b) => b[1] - a[1]) // Sort by value descending
+    .sort((a, b) => b[1] - a[1])
     .slice(0, topN)
     .map(([geography]) => geography)
 
@@ -86,17 +193,8 @@ export function getFirstLevelSegments(
   return firstLevelSegments.sort()
 }
 
-/**
- * Get the first available segment type from the data
- * @param data - The comparison data
- * @returns The first segment type name or null
- */
-export function getFirstSegmentType(data: ComparisonData | null): string | null {
-  if (!data || !data.dimensions.segments) return null
-  
-  const segmentTypes = Object.keys(data.dimensions.segments)
-  return segmentTypes.length > 0 ? segmentTypes[0] : null
-}
+/** @deprecated Use getFirstMarketSegmentType — kept for any external imports */
+export const getFirstSegmentType = getFirstMarketSegmentType
 
 /**
  * Calculate top regions based on CAGR (Compound Annual Growth Rate)
@@ -110,40 +208,26 @@ export function getTopRegionsByCAGR(
 ): string[] {
   if (!data) return []
 
-  // Get all value data records
+  const segmentType = getFirstMarketSegmentType(data)
+  if (!segmentType) return []
+
   const records = data.data.value.geography_segment_matrix
+  const regionSet = getRegionGeographiesSet(data)
 
-  // Calculate average CAGR for each geography
-  // Treat all geographies as single entities - aggregate by name
-  const geographyCAGRs = new Map<string, number[]>()
-
-  records.forEach((record: DataRecord) => {
-    const geography = record.geography
-
-    // Skip global level
-    if (geography === 'Global') return
-
-    // Treat all geographies as single entities - aggregate by name
-    if (record.cagr !== undefined && record.cagr !== null) {
-      const cagrs = geographyCAGRs.get(geography) || []
-      cagrs.push(record.cagr)
-      geographyCAGRs.set(geography, cagrs)
-    }
+  let geographyCAGRs = collectCagrSamplesByGeography(records, {
+    segmentType,
+    geographySet: regionSet,
+    leavesOnly: true,
   })
+  if (geographyCAGRs.size === 0) {
+    geographyCAGRs = collectCagrSamplesByGeography(records, {
+      segmentType,
+      geographySet: regionSet,
+      leavesOnly: false,
+    })
+  }
 
-  // Calculate average CAGR for each geography
-  const avgCAGRs = Array.from(geographyCAGRs.entries()).map(([geography, cagrs]) => ({
-    geography,
-    avgCAGR: cagrs.reduce((a, b) => a + b, 0) / cagrs.length
-  }))
-
-  // Sort geographies by average CAGR and get top N
-  const sortedGeographies = avgCAGRs
-    .sort((a, b) => b.avgCAGR - a.avgCAGR) // Sort by CAGR descending
-    .slice(0, topN)
-    .map(item => item.geography)
-
-  return sortedGeographies
+  return rankGeographiesByAvgCagr(geographyCAGRs, topN)
 }
 
 /**
@@ -158,40 +242,27 @@ export function getTopCountriesByCAGR(
 ): string[] {
   if (!data) return []
 
-  // Get all value data records
+  const segmentType = getFirstMarketSegmentType(data)
+  if (!segmentType) return []
+
   const records = data.data.value.geography_segment_matrix
+  const countrySet = new Set(getAllCountryGeographies(data))
+  if (countrySet.size === 0) return []
 
-  // Calculate average CAGR for each geography
-  // Treat all geographies as single entities - aggregate by name
-  const geographyCAGRs = new Map<string, number[]>()
-
-  records.forEach((record: DataRecord) => {
-    const geography = record.geography
-
-    // Skip global level
-    if (geography === 'Global') return
-
-    // Treat all geographies as single entities - aggregate by name
-    if (record.cagr !== undefined && record.cagr !== null) {
-      const cagrs = geographyCAGRs.get(geography) || []
-      cagrs.push(record.cagr)
-      geographyCAGRs.set(geography, cagrs)
-    }
+  let geographyCAGRs = collectCagrSamplesByGeography(records, {
+    segmentType,
+    geographySet: countrySet,
+    leavesOnly: true,
   })
+  if (geographyCAGRs.size === 0) {
+    geographyCAGRs = collectCagrSamplesByGeography(records, {
+      segmentType,
+      geographySet: countrySet,
+      leavesOnly: false,
+    })
+  }
 
-  // Calculate average CAGR for each geography
-  const avgCAGRs = Array.from(geographyCAGRs.entries()).map(([geography, cagrs]) => ({
-    geography,
-    avgCAGR: cagrs.reduce((a, b) => a + b, 0) / cagrs.length
-  }))
-
-  // Sort geographies by average CAGR and get top N
-  const sortedGeographies = avgCAGRs
-    .sort((a, b) => b.avgCAGR - a.avgCAGR) // Sort by CAGR descending
-    .slice(0, topN)
-    .map(item => item.geography)
-
-  return sortedGeographies
+  return rankGeographiesByAvgCagr(geographyCAGRs, topN)
 }
 
 /**
@@ -201,7 +272,7 @@ export function getTopCountriesByCAGR(
  */
 export function createTopMarketFilters(data: ComparisonData | null): Partial<FilterState> {
   const topRegions = getTopRegionsByMarketValue(data, 2023, 3)
-  const firstSegmentType = getFirstSegmentType(data)
+  const firstSegmentType = getFirstMarketSegmentType(data)
   const firstLevelSegments = firstSegmentType
     ? getFirstLevelSegments(data, firstSegmentType)
     : []
@@ -210,7 +281,7 @@ export function createTopMarketFilters(data: ComparisonData | null): Partial<Fil
     viewMode: 'geography-mode', // Geography on X-axis, segments as series
     geographies: topRegions,
     segments: firstLevelSegments,
-    segmentType: firstSegmentType || 'By Technology',
+    segmentType: firstSegmentType || 'By Product Type',
     yearRange: [2023, 2027],
     dataType: 'value'
   }
@@ -229,7 +300,7 @@ export function createGrowthLeadersFilters(data: ComparisonData | null): Partial
 
   // Get top 2 regions with highest CAGR
   const topRegions = getTopRegionsByCAGR(data, 2)
-  const firstSegmentType = getFirstSegmentType(data)
+  const firstSegmentType = getFirstMarketSegmentType(data)
   const firstLevelSegments = firstSegmentType
     ? getFirstLevelSegments(data, firstSegmentType)
     : []
@@ -238,7 +309,7 @@ export function createGrowthLeadersFilters(data: ComparisonData | null): Partial
     viewMode: 'geography-mode', // Geography on X-axis, segments as series
     geographies: topRegions,
     segments: firstLevelSegments,
-    segmentType: firstSegmentType || 'By Technology',
+    segmentType: firstSegmentType || 'By Product Type',
     yearRange: [2025, 2031],
     dataType: 'value'
   }
@@ -257,7 +328,7 @@ export function createEmergingMarketsFilters(data: ComparisonData | null): Parti
 
   // Get top 5 countries with highest CAGR
   const topCountries = getTopCountriesByCAGR(data, 5)
-  const firstSegmentType = getFirstSegmentType(data)
+  const firstSegmentType = getFirstMarketSegmentType(data)
   const firstLevelSegments = firstSegmentType
     ? getFirstLevelSegments(data, firstSegmentType)
     : []
@@ -266,7 +337,7 @@ export function createEmergingMarketsFilters(data: ComparisonData | null): Parti
     viewMode: 'geography-mode', // Geography on X-axis, segments as series
     geographies: topCountries,
     segments: firstLevelSegments,
-    segmentType: firstSegmentType || 'By Technology',
+    segmentType: firstSegmentType || 'By Product Type',
     yearRange: [2025, 2031],
     dataType: 'value'
   }
