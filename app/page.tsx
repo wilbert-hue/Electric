@@ -20,7 +20,8 @@ import { FilterPresets } from '@/components/filters/FilterPresets'
 import { ChartGroupSelector } from '@/components/filters/ChartGroupSelector'
 import { CustomScrollbar } from '@/components/ui/CustomScrollbar'
 import { GlobalKPICards } from '@/components/GlobalKPICards'
-import { getChartsForGroup } from '@/lib/chart-groups'
+import { getChartsForGroup, PROPOSITION_CHART_TO_SHEET } from '@/lib/chart-groups'
+import { CustomerPropositionTable } from '@/components/charts/CustomerPropositionTable'
 import { Lightbulb, X, Layers, LayoutGrid, Settings } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Footer } from '@/components/Footer'
@@ -31,7 +32,20 @@ export default function DashboardPage() {
   const { setData, setLoading, setError, data, isLoading, error, filters, selectedChartGroup, dashboardName } = useDashboardStore()
   const [mounted, setMounted] = useState(false)
   const [hasCheckedStore, setHasCheckedStore] = useState(false)
-  const [activeTab, setActiveTab] = useState<'bar' | 'line' | 'heatmap' | 'table' | 'waterfall' | 'bubble' | 'competitive-intelligence' | 'customer-intelligence' | 'customer-intelligence-database'>('bar')
+  const [activeTab, setActiveTab] = useState<
+    | 'bar'
+    | 'line'
+    | 'heatmap'
+    | 'table'
+    | 'waterfall'
+    | 'bubble'
+    | 'competitive-intelligence'
+    | 'customer-intelligence'
+    | 'customer-intelligence-database'
+    | 'proposition-1'
+    | 'proposition-2'
+    | 'proposition-3'
+  >('bar')
   const [showInsights, setShowInsights] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [viewMode, setViewMode] = useState<'tabs' | 'vertical'>('tabs')
@@ -55,7 +69,10 @@ export default function DashboardPage() {
     'bubble': 'bubble',
     'competitive-intelligence': 'competitive-intelligence',
     'customer-intelligence': 'customer-intelligence',
-    'customer-intelligence-database': 'customer-intelligence-database'
+    'customer-intelligence-database': 'customer-intelligence-database',
+    'proposition-1': 'proposition-1',
+    'proposition-2': 'proposition-2',
+    'proposition-3': 'proposition-3',
   }
 
   // Auto-switch to first available tab when chart group changes
@@ -374,6 +391,42 @@ export default function DashboardPage() {
                             🫧 Bubble Chart
                           </button>
                         )}
+                        {isChartVisible('proposition-1') && (
+                          <button
+                            onClick={() => setActiveTab('proposition-1')}
+                            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                              activeTab === 'proposition-1'
+                                ? 'border-blue-500 text-blue-600'
+                                : 'border-transparent text-black hover:text-black hover:border-gray-300'
+                            }`}
+                          >
+                            Proposition 1 — Basic
+                          </button>
+                        )}
+                        {isChartVisible('proposition-2') && (
+                          <button
+                            onClick={() => setActiveTab('proposition-2')}
+                            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                              activeTab === 'proposition-2'
+                                ? 'border-blue-500 text-blue-600'
+                                : 'border-transparent text-black hover:text-black hover:border-gray-300'
+                            }`}
+                          >
+                            Proposition 2 — Advance
+                          </button>
+                        )}
+                        {isChartVisible('proposition-3') && (
+                          <button
+                            onClick={() => setActiveTab('proposition-3')}
+                            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                              activeTab === 'proposition-3'
+                                ? 'border-blue-500 text-blue-600'
+                                : 'border-transparent text-black hover:text-black hover:border-gray-300'
+                            }`}
+                          >
+                            Proposition 3 — Premium
+                          </button>
+                        )}
                         {isChartVisible('customer-intelligence') && (
                           <button
                             onClick={() => setActiveTab('customer-intelligence')}
@@ -479,6 +532,31 @@ export default function DashboardPage() {
                         />
                       </div>
                     )}
+
+                    {activeTab === 'proposition-1' && (
+                      <div id="proposition-1-table">
+                        <CustomerPropositionTable
+                          sheetKey={PROPOSITION_CHART_TO_SHEET['proposition-1']}
+                          label="Proposition 1 — Basic"
+                        />
+                      </div>
+                    )}
+                    {activeTab === 'proposition-2' && (
+                      <div id="proposition-2-table">
+                        <CustomerPropositionTable
+                          sheetKey={PROPOSITION_CHART_TO_SHEET['proposition-2']}
+                          label="Proposition 2 — Advance"
+                        />
+                      </div>
+                    )}
+                    {activeTab === 'proposition-3' && (
+                      <div id="proposition-3-table">
+                        <CustomerPropositionTable
+                          sheetKey={PROPOSITION_CHART_TO_SHEET['proposition-3']}
+                          label="Proposition 3 — Premium"
+                        />
+                      </div>
+                    )}
                     
                     {activeTab === 'competitive-intelligence' && (
                       <div id="competitive-intelligence-chart">
@@ -572,6 +650,31 @@ export default function DashboardPage() {
                         <D3BubbleChartIndependent 
                           title="Coherent Opportunity Matrix" 
                           height={450}
+                        />
+                      </div>
+                    )}
+
+                    {isChartVisible('proposition-1') && (
+                      <div className="border-b pb-8">
+                        <CustomerPropositionTable
+                          sheetKey={PROPOSITION_CHART_TO_SHEET['proposition-1']}
+                          label="Proposition 1 — Basic"
+                        />
+                      </div>
+                    )}
+                    {isChartVisible('proposition-2') && (
+                      <div className="border-b pb-8">
+                        <CustomerPropositionTable
+                          sheetKey={PROPOSITION_CHART_TO_SHEET['proposition-2']}
+                          label="Proposition 2 — Advance"
+                        />
+                      </div>
+                    )}
+                    {isChartVisible('proposition-3') && (
+                      <div className="border-b pb-8">
+                        <CustomerPropositionTable
+                          sheetKey={PROPOSITION_CHART_TO_SHEET['proposition-3']}
+                          label="Proposition 3 — Premium"
                         />
                       </div>
                     )}
