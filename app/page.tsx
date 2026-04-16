@@ -22,7 +22,7 @@ import { CustomScrollbar } from '@/components/ui/CustomScrollbar'
 import { GlobalKPICards } from '@/components/GlobalKPICards'
 import { getChartsForGroup, PROPOSITION_CHART_TO_SHEET } from '@/lib/chart-groups'
 import { CustomerPropositionTable } from '@/components/charts/CustomerPropositionTable'
-import { Lightbulb, X, Layers, LayoutGrid, Settings } from 'lucide-react'
+import { Lightbulb, X, Layers, LayoutGrid, Settings, AlertTriangle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Footer } from '@/components/Footer'
 import Image from 'next/image'
@@ -229,10 +229,20 @@ export default function DashboardPage() {
         </div>
 
         {/* Global KPI Cards */}
-        <div className="mb-6">
+        <div className="mb-4">
           <GlobalKPICards />
         </div>
 
+        <div
+          role="alert"
+          className="mb-6 flex gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-sm"
+        >
+          <AlertTriangle className="h-5 w-5 flex-shrink-0 text-amber-600" aria-hidden />
+          <p className="leading-snug">
+            <span className="font-semibold">NOTE:</span> All the data in the dashboard is demo data. No
+            real world data is related to this.
+          </p>
+        </div>
 
         <div className="grid grid-cols-12 gap-6">
           {/* Sidebar - Enhanced Filter Panel */}
