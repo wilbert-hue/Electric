@@ -1,28 +1,126 @@
 {
   "Global": {
-    "By Type": {
-      "Sub-Normothermic Perfusion (20–34°C)": {},
-      "Warm or Normothermic Perfusion (35–37°C)": {}
+    "By Product Type": {
+      "Connectors": {
+        "Power Connectors": {},
+        "Control and Signal Connectors": {},
+        "Data and Communication Connectors": {},
+        "Fiber Optic Connectors": {}
+      },
+      "Cable Termination Products": {
+        "Lugs": {},
+        "Ferrules": {},
+        "Crimp Terminals": {},
+        "Splices and Joints": {}
+      },
+      "Terminal Blocks": {
+        "Feed-Through Terminal Blocks": {},
+        "Ground Terminal Blocks": {},
+        "Fuse and Disconnect Terminal Blocks": {},
+        "Interface and Relay Terminal Blocks": {}
+      },
+      "Power Distribution and Busway Systems": {
+        "Power Distribution Blocks": {
+          "Fixed Distribution Blocks": {},
+          "Modular Distribution Blocks": {},
+          "Covered Distribution Blocks": {},
+          "High-Current Distribution Blocks": {}
+        },
+        "Busbar Trunking / Busway Systems": {},
+        "Busway Tap-Off Units and Accessories": {}
+      },
+      "Cable Entry and Fittings": {
+        "Cable Glands": {},
+        "Conduit Fittings": {},
+        "Adapters, Reducers, Locknuts, and Seals": {},
+        "Cable Entry Sealing Systems": {},
+        "Brush Entry Plates": {}
+      },
+      "Cable Routing and Support Systems": {},
+      "Cable Trays and Ladders": {},
+      "Trunking, Ducts, and Raceways": {},
+      "Wire Basket Trays": {},
+      "Ladder Rack and Overhead Runway Systems": {},
+      "Cable Clips, Clamps, and Saddles": {},
+      "Cable Identification and Fastening Products": {
+        "Cable Ties": {},
+        "Cable Markers and Labels": {},
+        "Heat-Shrink Identification Sleeves": {},
+        "Hook-and-Loop Fastening Systems": {}
+      },
+      "Conduit and Mechanical Protection Systems": {
+        "Rigid Conduit": {},
+        "Flexible Conduit": {},
+        "Sleeves and Protective Tubing": {}
+      },
+      "Grounding and Bonding Products": {
+        "Ground Lugs": {},
+        "Bonding Jumpers": {},
+        "Ground Bars": {},
+        "Earthing Accessories": {}
+      },
+      "Junction and Installation Accessories": {
+        "Junction Boxes and Enclosures": {},
+        "Mounting and Fixing Accessories": {},
+        "Sealing and Insulating Accessories": {}
+      }
     },
-    "By Organ Type": {
-      "Liver": {},
-      "Heart": {},
-      "Lung": {},
-      "Kidney": {},
-      "Others (Pancreas, Small bowel / Intestine, Composite Tissues / Limb Perfusion (emerging use cases))": {}
+    "By Project Type": {
+      "New Build Installation": {},
+      "Expansion and Brownfield Addition": {},
+      "Retrofit and Modernization": {},
+      "Maintenance, Repair, and Replacement": {}
     },
-    "Application / Use Case": {
-      "Organ Preservation": {},
-      "Viability Assessment": {},
-      "Physiologic Transport": {},
-      "Reconditioning Marginal Organs": {},
-      "Others (Research Use / Protocol development)": {}
+    "By Application": {
+      "Power Distribution and Termination": {},
+      "Control and Instrumentation Wiring": {},
+      "Data, Telecom, and Low-Voltage Networking": {},
+      "Grounding, Bonding, and Safety": {},
+      "Cable Routing, Support, and Protection": {}
     },
-    "By End User": {
-      "Hospitals & Clinics": {},
-      "Specialty Clinic/Centers": {},
-      "Transplant Centers": {},
-      "Others (Research Institutes/Centers, Organ Procurement Organizations, etc.)": {}
+    "By End-Use Sector": {
+      "Industrial Facilities": {
+        "Discrete Manufacturing": {},
+        "Process Industries": {},
+        "Warehousing and Logistics Sites": {}
+      },
+      "Infrastructure Projects": {
+        "Transport Infrastructure": {},
+        "Water and Wastewater Infrastructure": {},
+        "Telecom and Digital Infrastructure": {},
+        "Urban and Civic Infrastructure": {}
+      },
+      "Commercial Buildings": {},
+      "Offices and Mixed-Use Buildings": {},
+      "Retail and Shopping Centers": {},
+      "Hotels and Hospitality Buildings": {},
+      "Residential Buildings": {
+        "Single-Family Housing": {},
+        "Multi-Family Housing": {}
+      },
+      "Institutional and Public Buildings": {
+        "Healthcare Facilities": {},
+        "Education Facilities": {},
+        "Government and Public Buildings": {}
+      },
+      "Utilities and Energy Sites": {
+        "Power Generation Sites": {},
+        "Transmission and Distribution Sites": {},
+        "Renewable Energy Sites": {}
+      },
+      "Data Centers": {
+        "Hyperscale Data Centers": {},
+        "Colocation Data Centers": {},
+        "Enterprise Data Centers": {},
+        "Edge and Micro Data Centers": {}
+      },
+      "Others": {
+        "Marine and Offshore Non-Energy, Agriculture and Rural Installations": {}
+      }
+    },
+    "By Country": {
+      "U.S.": {},
+      "Canada": {}
     },
     "By Region": {
       "North America": {
